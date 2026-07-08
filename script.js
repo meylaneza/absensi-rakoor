@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const buktiInput = document.getElementById("bukti");
 
     // TENTUKAN URL GOOGLE APPS SCRIPT KAMU DI SINI
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwJMVollAQZXnpUDgF6617omFfzXeTse4muecfIj2htKhllOs0BvS-UVZm3BsopisLK/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx4iGcxCLaXFgUDdEnXqFgtzXNohylux8o_f2Ocum2MWGI5krZDQhKzgF7Zujfy2dQC/exec";
 
     statusSelect.addEventListener("change", () => {
         if (statusSelect.value === "Hadir") {
