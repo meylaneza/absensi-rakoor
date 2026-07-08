@@ -6,23 +6,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const tabelBody = document.querySelector("#tabelAbsensi tbody");
     const btnClear = document.getElementById("btnClear");
 
-    // Jalur penyimpanan relai data tabel global biar sinkron antar HP
-    const BIN_URL = "https://api.keyvalue.xyz/6c8e21ba/pelcar_rakoor_sponsorship";
-    let dataAbsensi = [];
+    // === MASUKKAN LINK URL DARI MOCKAPI KAMU DI SINI ===
+    const BASE_URL = "https://6a4e1a54e785c9ef536c4a84.mockapi.io/absensi";
+    // ===================================================
 
-    // Muat data global dari internet agar semua orang melihat data yang sama
+    // 1. Ambil data terpusat dari internet agar semua HP bisa melihat daftar yang sama
     function muatDataGlobal() {
-        fetch(BIN_URL)
-        .then(res => res.text())
-        .then(text => {
-            if (text && text.trim() !== "") {
-                dataAbsensi = JSON.parse(text);
-                renderTabel();
-            }
+        fetch(BASE_URL)
+        .then(res => {
+            if (!res.ok) throw new Error("Gagal konek database");
+            return res.json();
         })
-        .catch(() => {
-            dataAbsensi = JSON.parse(localStorage.getItem("dataAbsensi")) || [];
-            renderTabel();
+        .then(data => {
+            renderTabel(data);
+        })
+        .catch(err => {
+            console.error("Error muat data: ", err);
+            tabelBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: #e50914; padding: 20px;">Gagal memuat data dari server.</td></tr>`;
         });
     }
 
@@ -36,10 +36,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    function renderTabel() {
+    function renderTabel(dataAbsensi) {
         tabelBody.innerHTML = "";
-        if (dataAbsensi.length === 0) {
-            tabelBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: #a0aec0; padding: 20px;">Belum ada riwayat kehadiran.</td></tr>`;
+        if (!dataAbsensi || dataAbsensi.length === 0) {
+            tabelBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: #a0aec0; padding: 20px;">Belum ada riwayat kehadiran anggota.</td></tr>`;
             return;
         }
 
@@ -51,9 +51,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (absen.status === "Tanpa Keterangan") badgeClass = "badge-alfa";
 
             let buktiCell = "-";
-            if (absen.hasBukti) {
-                // Memberikan catatan ke admin bahwa file tersimpan di sistem
-                buktiCell = `<span style="color:#a0aec0; font-style:italic;">Tersedia di Dashboard</span>`;
+            if (absen.buktiUrl && absen.buktiUrl !== "-") {
+                // Link file bukti aman bisa langsung didownload/dilihat siapa saja
+                buktiCell = `<a href="${absen.buktiUrl}" target="_blank" class="btn-view" download="${absen.fileName || 'bukti'}">Lihat Bukti</a>`;
             }
 
             row.innerHTML = `
@@ -68,8 +68,8 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Submit Absensi Form
-    absensiForm.addEventListener("submit", function(e) {
+    // 2. Kirim data absensi ke server database cloud
+    absensiForm.addEventListener("submit", (e) => {
         e.preventDefault();
         const btnSubmit = absensiForm.querySelector(".btn-submit");
         btnSubmit.innerText = "Mengirim...";
@@ -78,69 +78,84 @@ document.addEventListener("DOMContentLoaded", () => {
         const namaInput = document.getElementById("nama").value.toUpperCase();
         const statusInput = statusSelect.value;
         const keteranganInput = document.getElementById("keterangan").value;
-        const hasFile = buktiInput.files.length > 0;
+        const fileBukti = buktiInput.files[0];
 
         const sekarang = new Date();
         const waktuString = `${String(sekarang.getHours()).padStart(2, '0')}:${String(sekarang.getMinutes()).padStart(2, '0')}`;
 
-        // Kirim file berkas asli fisik langsung ke server Formspree agar anti eror
-        fetch(absensiForm.action, {
-            method: 'POST',
-            body: new FormData(absensiForm),
-            headers: { 'Accept': 'application/json' }
-        })
-        .then(response => {
-            if (response.ok) {
-                // Jika sukses terkirim ke server, update list tabel global
-                fetch(BIN_URL)
-                .then(res => res.text())
-                .then(text => {
-                    let listTerbaru = [];
-                    if (text && text.trim() !== "") {
-                        listTerbaru = JSON.parse(text);
-                    }
-                    listTerbaru.push({
-                        waktu: waktuString,
-                        nama: namaInput,
-                        status: statusInput,
-                        keterangan: keteranganInput || "-",
-                        hasBukti: hasFile
-                    });
+        const kirimKeDatabase = (base64Url = "-", namaFile = "") => {
+            const dataBaru = {
+                waktu: waktuString,
+                nama: namaInput,
+                status: statusInput,
+                keterangan: keteranganInput || "-",
+                buktiUrl: base64Url,
+                fileName: namaFile
+            };
 
-                    // Kirim pembaruan tabel ke internet
-                    return fetch(BIN_URL + "/" + JSON.stringify(listTerbaru), { method: "POST" });
-                })
-                .then(() => {
-                    alert("Absensi & File Bukti berhasil dikirim masuk database!");
-                    absensiForm.reset();
-                    buktiGroup.style.display = "none";
-                    muatDataGlobal();
-                });
-            } else {
-                alert("Gagal mengirim data ke server form.");
-            }
-        })
-        .catch(() => {
-            alert("Terjadi masalah jaringan.");
-        })
-        .finally(() => {
-            btnSubmit.innerText = "Submit Absensi";
-            btnSubmit.disabled = false;
-        });
+            fetch(BASE_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(dataBaru)
+            })
+            .then(res => {
+                if (!res.ok) throw new Error("Server menolak data");
+                return res.json();
+            })
+            .then(() => {
+                alert("Absensi BERHASIL dikirim dan tercatat di riwayat global!");
+                absensiForm.reset();
+                buktiGroup.style.display = "none";
+                muatDataGlobal(); // Langsung refresh tabel
+            })
+            .catch(err => {
+                alert("Gagal mengirim absen. Masalah: " + err.message);
+            })
+            .finally(() => {
+                btnSubmit.innerText = "Submit Absensi";
+                btnSubmit.disabled = false;
+            });
+        };
+
+        // Membaca segala jenis format file (Image, PDF, Word, dll)
+        if (fileBukti) {
+            const reader = new FileReader();
+            reader.onloadend = function() {
+                kirimKeDatabase(reader.result, fileBukti.name);
+            };
+            reader.readAsDataURL(fileBukti);
+        } else {
+            kirimKeDatabase();
+        }
     });
 
-    // Kunci tombol reset khusus admin
+    // 3. Tombol Reset Khusus Admin
     btnClear.addEventListener("click", () => {
-        const inputPassword = prompt("Masukkan Password Admin PELCAR untuk mereset data:");
+        const inputPassword = prompt("Masukkan Password Admin PELCAR untuk menghapus seluruh data:");
         if (inputPassword === "admin123") {
-            if (confirm("Hapus seluruh daftar kehadiran?")) {
-                fetch(BIN_URL + "/[]", { method: "POST" }).then(() => muatDataGlobal());
+            if (confirm("Apakah Anda yakin ingin menghapus TOTAL seluruh riwayat data absensi di server?")) {
+                // Mengambil semua item lalu menghapusnya satu per satu dari server
+                fetch(BASE_URL)
+                .then(res => res.json())
+                .then(data => {
+                    const deletePromises = data.map(item => 
+                        fetch(`${BASE_URL}/${item.id}`, { method: 'DELETE' })
+                    );
+                    return Promise.all(deletePromises);
+                })
+                .then(() => {
+                    alert("Seluruh database berhasil dikosongkan!");
+                    muatDataGlobal();
+                });
             }
         } else if (inputPassword !== null) {
             alert("Password SALAH!");
         }
     });
 
+    // Jalankan penarikan data terpusat saat web diakses pertama kali
     muatDataGlobal();
-    setInterval(muatDataGlobal, 10000); // Sinkronisasi otomatis setiap 10 detik
+    
+    // Auto-refresh tabel setiap 7 detik agar semua HP selalu update daftarnya secara real-time
+    setInterval(muatDataGlobal, 7000);
 });
