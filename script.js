@@ -6,10 +6,26 @@ document.addEventListener("DOMContentLoaded", () => {
     const tabelBody = document.querySelector("#tabelAbsensi tbody");
     const btnClear = document.getElementById("btnClear");
 
-    // Ambil data yang tersimpan dari LocalStorage
-    let dataAbsensi = JSON.parse(localStorage.getItem("dataAbsensi")) || [];
+    // Jalur penyimpanan relai data tabel global biar sinkron antar HP
+    const BIN_URL = "https://api.keyvalue.xyz/6c8e21ba/pelcar_rakoor_sponsorship";
+    let dataAbsensi = [];
 
-    // Munculkan/sembunyikan input file bukti secara dinamis
+    // Muat data global dari internet agar semua orang melihat data yang sama
+    function muatDataGlobal() {
+        fetch(BIN_URL)
+        .then(res => res.text())
+        .then(text => {
+            if (text && text.trim() !== "") {
+                dataAbsensi = JSON.parse(text);
+                renderTabel();
+            }
+        })
+        .catch(() => {
+            dataAbsensi = JSON.parse(localStorage.getItem("dataAbsensi")) || [];
+            renderTabel();
+        });
+    }
+
     statusSelect.addEventListener("change", () => {
         if (statusSelect.value === "Hadir") {
             buktiGroup.style.display = "none";
@@ -20,27 +36,24 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Fungsi menampilkan data ke tabel
     function renderTabel() {
         tabelBody.innerHTML = "";
-
         if (dataAbsensi.length === 0) {
-            tabelBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: #a0aec0; padding: 20px;">Belum ada data absensi.</td></tr>`;
+            tabelBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: #a0aec0; padding: 20px;">Belum ada riwayat kehadiran.</td></tr>`;
             return;
         }
 
         dataAbsensi.forEach((absen, index) => {
             const row = document.createElement("tr");
-
             let badgeClass = "badge-hadir";
             if (absen.status === "Telat") badgeClass = "badge-telat";
             if (absen.status === "Izin") badgeClass = "badge-izin";
             if (absen.status === "Tanpa Keterangan") badgeClass = "badge-alfa";
 
-            // Tombol "Lihat Bukti" langsung membuka tab baru berisi gambar asli
             let buktiCell = "-";
-            if (absen.buktiUrl && absen.buktiUrl !== "-") {
-                buktiCell = `<a href="${absen.buktiUrl}" target="_blank" class="btn-view">Lihat Bukti</a>`;
+            if (absen.hasBukti) {
+                // Memberikan catatan ke admin bahwa file tersimpan di sistem
+                buktiCell = `<span style="color:#a0aec0; font-style:italic;">Tersedia di Dashboard</span>`;
             }
 
             row.innerHTML = `
@@ -56,66 +69,78 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Submit Absensi Form
-    absensiForm.addEventListener("submit", (e) => {
+    absensiForm.addEventListener("submit", function(e) {
         e.preventDefault();
+        const btnSubmit = absensiForm.querySelector(".btn-submit");
+        btnSubmit.innerText = "Mengirim...";
+        btnSubmit.disabled = true;
 
-        const namaInput = document.getElementById("nama").value;
+        const namaInput = document.getElementById("nama").value.toUpperCase();
         const statusInput = statusSelect.value;
         const keteranganInput = document.getElementById("keterangan").value;
-        const fileBukti = buktiInput.files[0];
+        const hasFile = buktiInput.files.length > 0;
 
         const sekarang = new Date();
         const waktuString = `${String(sekarang.getHours()).padStart(2, '0')}:${String(sekarang.getMinutes()).padStart(2, '0')}`;
 
-        const simpanData = (base64Url = "-") => {
-            const dataBaru = {
-                waktu: waktuString,
-                nama: namaInput.toUpperCase(),
-                status: statusInput,
-                keterangan: keteranganInput,
-                buktiUrl: base64Url
-            };
+        // Kirim file berkas asli fisik langsung ke server Formspree agar anti eror
+        fetch(absensiForm.action, {
+            method: 'POST',
+            body: new FormData(absensiForm),
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(response => {
+            if (response.ok) {
+                // Jika sukses terkirim ke server, update list tabel global
+                fetch(BIN_URL)
+                .then(res => res.text())
+                .then(text => {
+                    let listTerbaru = [];
+                    if (text && text.trim() !== "") {
+                        listTerbaru = JSON.parse(text);
+                    }
+                    listTerbaru.push({
+                        waktu: waktuString,
+                        nama: namaInput,
+                        status: statusInput,
+                        keterangan: keteranganInput || "-",
+                        hasBukti: hasFile
+                    });
 
-            dataAbsensi.push(dataBaru);
-            localStorage.setItem("dataAbsening", JSON.stringify(dataAbsensi)); // cadangan lokal aman
-            localStorage.setItem("dataAbsensi", JSON.stringify(dataAbsensi));
-            
-            absensiForm.reset();
-            buktiGroup.style.display = "none";
-            renderTabel();
-            alert("Absensi berhasil disimpan!");
-        };
-
-        // Jika ada file bukti, ubah ke URL lokal (Base64) tanpa butuh server internet
-        if (fileBukti) {
-            const reader = new FileReader();
-            reader.onloadend = function() {
-                simpanData(reader.result);
-            };
-            reader.readAsDataURL(fileBukti);
-        } else {
-            simpanData();
-        }
-    });
-
-    // Reset Data Amandengan Password Admin
-    btnClear.addEventListener("click", () => {
-        const passwordBenar = "admin123"; // Password bebas diganti
-        const inputPassword = prompt("Masukkan Password Admin untuk mereset semua data:");
-
-        if (inputPassword === null) return; 
-
-        if (inputPassword === passwordBenar) {
-            if (confirm("Apakah Anda yakin ingin menghapus seluruh data riwayat absensi?")) {
-                dataAbsensi = [];
-                localStorage.removeItem("dataAbsensi");
-                renderTabel();
-                alert("Semua data berhasil dibersihkan!");
+                    // Kirim pembaruan tabel ke internet
+                    return fetch(BIN_URL + "/" + JSON.stringify(listTerbaru), { method: "POST" });
+                })
+                .then(() => {
+                    alert("Absensi & File Bukti berhasil dikirim masuk database!");
+                    absensiForm.reset();
+                    buktiGroup.style.display = "none";
+                    muatDataGlobal();
+                });
+            } else {
+                alert("Gagal mengirim data ke server form.");
             }
-        } else {
-            alert("Password SALAH! Anda tidak punya akses.");
+        })
+        .catch(() => {
+            alert("Terjadi masalah jaringan.");
+        })
+        .finally(() => {
+            btnSubmit.innerText = "Submit Absensi";
+            btnSubmit.disabled = false;
+        });
+    });
+
+    // Kunci tombol reset khusus admin
+    btnClear.addEventListener("click", () => {
+        const inputPassword = prompt("Masukkan Password Admin PELCAR untuk mereset data:");
+        if (inputPassword === "admin123") {
+            if (confirm("Hapus seluruh daftar kehadiran?")) {
+                fetch(BIN_URL + "/[]", { method: "POST" }).then(() => muatDataGlobal());
+            }
+        } else if (inputPassword !== null) {
+            alert("Password SALAH!");
         }
     });
 
-    renderTabel();
+    muatDataGlobal();
+    setInterval(muatDataGlobal, 10000); // Sinkronisasi otomatis setiap 10 detik
 });
