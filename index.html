@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Absensi Rakoor - PELCAR</title>
-    <link rel="stylesheet" href="style.css?v=1.1">
+    <link rel="stylesheet" href="style.css?v=1.2">
 </head>
 <body>
 
@@ -15,15 +15,15 @@
             <p>DIVISI SPONSORSHIP POLBAN EV</p>
         </div>
 
-        <form id="absensiForm" action="https://formspree.io/f/xykqabyk" method="POST" enctype="multipart/form-data">
+        <form id="absensiForm">
             <div class="form-group">
                 <label for="nama">Nama Lengkap</label>
-                <input type="text" id="nama" name="Nama" placeholder="Masukkan nama sesuai nama divisi..." required>
+                <input type="text" id="nama" placeholder="Masukkan nama lengkap Anda..." required>
             </div>
 
             <div class="form-group">
                 <label for="status">Status Kehadiran</label>
-                <select id="status" name="Status" required>
+                <select id="status" required>
                     <option value="Hadir">Hadir</option>
                     <option value="Telat">Telat</option>
                     <option value="Izin">Izin</option>
@@ -32,14 +32,13 @@
             </div>
 
             <div class="form-group">
-                <label for="keterangan">Keterangan (Opsional)</label>
-                <textarea id="keterangan" name="Keterangan" rows="3" placeholder="Alasan telat/izin atau info tambahan..."></textarea>
+                <label for="keterangan">Keterangan Tambahan (Opsional)</label>
+                <textarea id="keterangan" rows="3" placeholder="Contoh: Sedang dijalan, Ban bocor, Urusan keluarga, dll."></textarea>
             </div>
 
             <div class="form-group" id="buktiGroup" style="display: none;">
                 <label for="bukti">Unggah Bukti (Image, Word, PDF, dll)</label>
-                <input type="file" id="bukti" name="File_Bukti" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx">
-                <small style="color: #a0aec0; display:block; margin-top:5px;">Mendukung format gambar, PDF, atau Word.</small>
+                <input type="file" id="bukti" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx">
             </div>
 
             <button type="submit" class="btn-submit">Submit Absensi</button>
@@ -68,6 +67,6 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=1.2"></script>
 </body>
 </html>
