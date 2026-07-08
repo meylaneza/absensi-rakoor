@@ -6,11 +6,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const tabelBody = document.querySelector("#tabelAbsensi tbody");
     const btnClear = document.getElementById("btnClear");
 
-    // === MASUKKAN LINK URL DARI MOCKAPI KAMU DI SINI ===
+    // Link MockAPI kamu
     const BASE_URL = "https://6a4e1a54e785c9ef536c4a84.mockapi.io/absensi";
-    // ===================================================
 
-    // 1. Ambil data terpusat dari internet agar semua HP bisa melihat daftar yang sama
+    // 1. Ambil data terpusat dari internet
     function muatDataGlobal() {
         fetch(BASE_URL)
         .then(res => {
@@ -50,17 +49,18 @@ document.addEventListener("DOMContentLoaded", () => {
             if (absen.status === "Izin") badgeClass = "badge-izin";
             if (absen.status === "Tanpa Keterangan") badgeClass = "badge-alfa";
 
+            // Tombol lihat bukti yang aman tanpa tulisan undefined
             let buktiCell = "-";
             if (absen.buktiUrl && absen.buktiUrl !== "-") {
-                // Link file bukti aman bisa langsung didownload/dilihat siapa saja
-                buktiCell = `<a href="${absen.buktiUrl}" target="_blank" class="btn-view" download="${absen.fileName || 'bukti'}">Lihat Bukti</a>`;
+                buktiCell = `<a href="${absen.buktiUrl}" target="_blank" class="btn-view">Lihat Bukti</a>`;
             }
 
+            // Memastikan data dibaca dengan benar sesuai nama variabel di MockAPI
             row.innerHTML = `
                 <td>${index + 1}.</td>
-                <td>${absen.waktu}</td>
-                <td><strong>${absen.nama}</strong></td>
-                <td><span class="badge ${badgeClass}">${absen.status}</span></td>
+                <td>${absen.waktu || "-"}</td>
+                <td><strong>${absen.nama || "-"}</strong></td>
+                <td><span class="badge ${badgeClass}">${absen.status || "-"}</span></td>
                 <td>${absen.keterangan || "-"}</td>
                 <td>${buktiCell}</td>
             `;
@@ -83,14 +83,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const sekarang = new Date();
         const waktuString = `${String(sekarang.getHours()).padStart(2, '0')}:${String(sekarang.getMinutes()).padStart(2, '0')}`;
 
-        const kirimKeDatabase = (base64Url = "-", namaFile = "") => {
+        const kirimKeDatabase = (base64Url = "-") => {
+            // Struktur data object yang rapi dan disukai oleh MockAPI
             const dataBaru = {
                 waktu: waktuString,
                 nama: namaInput,
                 status: statusInput,
                 keterangan: keteranganInput || "-",
-                buktiUrl: base64Url,
-                fileName: namaFile
+                buktiUrl: base64Url
             };
 
             fetch(BASE_URL, {
@@ -117,11 +117,11 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         };
 
-        // Membaca segala jenis format file (Image, PDF, Word, dll)
+        // Cek apakah ada file yang diunggah, kalau tidak ada langsung kirim
         if (fileBukti) {
             const reader = new FileReader();
             reader.onloadend = function() {
-                kirimKeDatabase(reader.result, fileBukti.name);
+                kirimKeDatabase(reader.result);
             };
             reader.readAsDataURL(fileBukti);
         } else {
@@ -134,7 +134,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const inputPassword = prompt("Masukkan Password Admin PELCAR untuk menghapus seluruh data:");
         if (inputPassword === "admin123") {
             if (confirm("Apakah Anda yakin ingin menghapus TOTAL seluruh riwayat data absensi di server?")) {
-                // Mengambil semua item lalu menghapusnya satu per satu dari server
                 fetch(BASE_URL)
                 .then(res => res.json())
                 .then(data => {
@@ -153,9 +152,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Jalankan penarikan data terpusat saat web diakses pertama kali
+    // Jalankan penarikan data saat web dibuka
     muatDataGlobal();
     
-    // Auto-refresh tabel setiap 7 detik agar semua HP selalu update daftarnya secara real-time
-    setInterval(muatDataGlobal, 7000);
+    // Auto-refresh tabel setiap 5 detik agar selalu real-time
+    setInterval(muatDataGlobal, 5000);
 });
