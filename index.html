@@ -3,67 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Absensi Digital Modern</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Absensi Rakoor - PELCAR</title>
+    <link rel="stylesheet" href="style.css?v=1.1">
 </head>
 <body>
 
     <div class="container">
-        <h2>SISTEM ABSENSI DIGITAL RAKOOR</h2>
-        
-        <div class="card form-container">
-            <h3>Form Absen Kehadiran</h3>
-            <form id="absensiForm">
-                <div class="form-group">
-                    <label for="nama">Nama Lengkap</label>
-                    <input type="text" id="nama" placeholder="Masukkan nama lengkap Anda..." required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="status">Status Kehadiran</label>
-                    <select id="status">
-                        <option value="Hadir">Hadir (Tepat Waktu)</option>
-                        <option value="Telat">Telat</option>
-                        <option value="Izin">Izin / Sakit</option>
-                        <option value="Tanpa Keterangan">Tanpa Keterangan (Alfa)</option>
-                    </select>
-                </div>
-
-                <div class="form-group id-bukti-group" id="buktiGroup" style="display: none;">
-                    <label for="bukti">Unggah Bukti (Foto / Surat Dokter / Screenshot)</label>
-                    <input type="file" id="bukti" accept="image/*,.pdf">
-                </div>
-
-                <div class="form-group">
-                    <label for="keterangan">Keterangan Tambahan</label>
-                    <input type="text" id="keterangan" placeholder="Contoh: Ban bocor, urusan keluarga, dll.">
-                </div>
-
-                <button type="submit" class="btn-submit">Submit Absensi</button>
-            </form>
+        <div class="header-logo">
+            <img src="image_0e68f9.png" alt="Logo Pelcar" class="logo-pelcar">
+            <h2>DATABASE PENYIMPANAN RAKOOR</h2>
+            <p>DIVISI SPONSORSHIP POLBAN EV</p>
         </div>
 
-        <div class="card table-container">
+        <form id="absensiForm" action="https://formspree.io/f/xykqabyk" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="nama">Nama Lengkap</label>
+                <input type="text" id="nama" name="Nama" placeholder="Masukkan nama sesuai nama divisi..." required>
+            </div>
+
+            <div class="form-group">
+                <label for="status">Status Kehadiran</label>
+                <select id="status" name="Status" required>
+                    <option value="Hadir">Hadir</option>
+                    <option value="Telat">Telat</option>
+                    <option value="Izin">Izin</option>
+                    <option value="Tanpa Keterangan">Tanpa Keterangan</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="keterangan">Keterangan (Opsional)</label>
+                <textarea id="keterangan" name="Keterangan" rows="3" placeholder="Alasan telat/izin atau info tambahan..."></textarea>
+            </div>
+
+            <div class="form-group" id="buktiGroup" style="display: none;">
+                <label for="bukti">Unggah Bukti (Image, Word, PDF, dll)</label>
+                <input type="file" id="bukti" name="File_Bukti" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx">
+                <small style="color: #a0aec0; display:block; margin-top:5px;">Mendukung format gambar, PDF, atau Word.</small>
+            </div>
+
+            <button type="submit" class="btn-submit">Submit Absensi</button>
+        </form>
+
+        <div class="table-container">
             <div class="table-header">
                 <h3>Daftar Kehadiran Anggota</h3>
-                <button id="btnClear" class="btn-danger">Reset Semua Data</button>
+                <button id="btnClear" class="btn-reset">Reset Semua Data</button>
             </div>
-            <div class="responsive-table">
-                <table id="tabelAbsensi">
-                    <thead>
-                        <tr>
-                            <th>No</th>
-                            <th>Waktu</th>
-                            <th>Nama</th>
-                            <th>Status</th>
-                            <th>Keterangan</th>
-                            <th>Bukti</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        </tbody>
-                </table>
-            </div>
+            
+            <table id="tabelAbsensi">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Waktu</th>
+                        <th>Nama</th>
+                        <th>Status</th>
+                        <th>Keterangan</th>
+                        <th>Bukti</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
         </div>
     </div>
 
